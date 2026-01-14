@@ -11,6 +11,8 @@ from app.api.templates import router as templates_router
 from app.api.export import router as export_router
 from app.api.document_variables import router as document_variables_router
 from app.api.chat import router as chat_router
+from app.api.live_meeting import router as live_meeting_router
+from app.api.live_meeting_ws import router as live_meeting_ws_router
 # Create FastAPI app
 app = FastAPI(
     title="Prelexa AI Document Analysis API",
@@ -39,6 +41,9 @@ app.include_router(templates_router, tags=["templates"])
 app.include_router(export_router, prefix="/export", tags=["export"])
 app.include_router(document_variables_router, tags=["Document Variables"])
 app.include_router(chat_router)
+app.include_router(live_meeting_router,tags=["Live Meeting"])
+app.include_router(live_meeting_ws_router)
+
 # app.include_router(export_router, prefix="/api")
 
 
