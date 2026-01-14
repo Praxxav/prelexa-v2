@@ -8,7 +8,7 @@ RATE = 16000
 CHUNK = int(RATE / 10)
 
 credentials = service_account.Credentials.from_service_account_file(
-    r"D:\Prescalelabs\v1\acquired-voice-434104-k8-d06a45cf4cfc.json"
+    r"D:\Prescalelabs\acquired-voice-434104-k8-d06a45cf4cfc.json"
 )
 
 client = speech.SpeechClient(credentials=credentials)
