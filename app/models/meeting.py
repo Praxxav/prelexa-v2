@@ -1,7 +1,7 @@
-# app/models/meeting.py
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+
 
 class LiveMeeting(BaseModel):
     meeting_id: str

@@ -1,5 +1,4 @@
 import asyncio
-import threading
 from datetime import datetime
 
 from app.documents.live_document_state import LIVE_DOCUMENT_STATE
@@ -8,18 +7,17 @@ from app.agent.decisions_agent import DecisionsAgent
 from app.agent.action_items_agent import ActionItemsAgent
 from app.agent.risk_agent import RiskAgent
 from app.models.meeting import LiveMeeting
-from app.services.stt_service import stream_transcript
 
-# In-memory running meetings
 RUNNING_MEETINGS = {}
 
 
-async def process_live_text(org_id: str, text: str):
+async def process_live_text(meeting_id: str, text: str):
     """
-    Process one finalized speech chunk.
+    Processes live text chunks coming from browser STT.
     """
+
     state = LIVE_DOCUMENT_STATE.setdefault(
-        org_id,
+        meeting_id,
         {
             "transcript": "",
             "decisions": [],
@@ -30,76 +28,51 @@ async def process_live_text(org_id: str, text: str):
 
     state["transcript"] += " " + text
 
+    # 1. Update Transcript & Broadcast Immediately
+    state["transcript"] += " " + text
+    
+    await connection_manager.broadcast(
+        meeting_id,
+        {
+            "type": "live_update",
+            "payload": state,
+        },
+        exclude_ws=None 
+    )
+
+    # 2. Run AI Agents in parallel
     decisions_agent = DecisionsAgent()
     actions_agent = ActionItemsAgent()
     risks_agent = RiskAgent()
 
+    # We use gathered results to update state
     decisions, actions, risks = await asyncio.gather(
         decisions_agent.process(text),
         actions_agent.process(text),
         risks_agent.process(text),
     )
 
+    has_changes = False
+
     if decisions:
         state["decisions"].extend(decisions)
+        has_changes = True
 
     if actions:
         state["action_items"].extend(actions)
+        has_changes = True
 
     if risks:
         state["risks"].extend(risks)
-
-    await connection_manager.broadcast(
-        org_id,
-        {
-            "type": "live_update",
-            "payload": state,
-        },
-    )
-
-
-def start_stt_listener(org_id: str, loop: asyncio.AbstractEventLoop):
-    """
-    Runs Google STT (blocking) in a background thread.
-    Bridges sync STT → async agents safely.
-    """
-    try:
-        for text in stream_transcript():
-            if not text or not text.strip():
-                continue
-
-            print("[STT]", text)
-
-            asyncio.run_coroutine_threadsafe(
-                process_live_text(org_id, text),
-                loop,
-            )
-    except Exception as e:
-        print("STT listener crashed:", e)
-
-
-async def start_live_meeting(org_id: str, meet_url: str) -> LiveMeeting:
-    """
-    Start a live meeting with REAL speech-to-text.
-    """
-    meeting = LiveMeeting(
-        meeting_id=f"meet-{datetime.utcnow().timestamp()}",
-        org_id=org_id,
-        meet_url=meet_url,
-        started_at=datetime.utcnow(),
-        status="running",
-    )
-
-    RUNNING_MEETINGS[meeting.meeting_id] = meeting
-
-    # Get current event loop (FastAPI loop)
-    loop = asyncio.get_running_loop()
-
-    # Start STT in background thread
-    threading.Thread(
-        target=start_stt_listener,
-        args=(org_id, loop),
-        daemon=True,
-    ).start()
-
-    return meeting
+        has_changes = True
+        
+    # 3. If AI found something, broadcast again
+    if has_changes:
+        await connection_manager.broadcast(
+            meeting_id,
+            {
+                "type": "live_update",
+                "payload": state,
+            },
+            exclude_ws=None 
+        )
