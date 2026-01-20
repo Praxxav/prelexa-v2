@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from docx import Document
 from fastapi import UploadFile, BackgroundTasks, HTTPException
 
 from db.database import db
@@ -77,7 +78,7 @@ class DocumentService:
 
     # ---------------------------
     # BACKGROUND AI PROCESS
-    # ---------------------------
+    # --------------------------- 
     async def _process_document_background(self, doc_id: str, file_path: str, ext: str):
         try:
             await db.document.update(
@@ -233,3 +234,31 @@ class DocumentService:
         await db.document.delete(where={"id": doc_id})
 
         return {"success": True, "message": "Document deleted successfully"}
+
+async def create_document_from_meeting(org_id: str, state: dict, title: str):
+    content = f"""
+## Transcript
+{state['transcript']}
+
+## Decisions
+{chr(10).join(state['decisions'])}
+
+## Action Items
+{chr(10).join(state['action_items'])}
+
+## Risks
+{chr(10).join(state['risks'])}
+"""
+
+    doc = Document(
+        org_id=org_id,
+        title=title,
+        content=content,
+        source="meeting",
+    )
+
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
+
+    return doc
