@@ -14,9 +14,22 @@ async def live_ws(websocket: WebSocket):
         return
 
     # Connect
-    await connection_manager.connect(meeting_id, user_id, websocket)
+    await connection_manager.connect(meeting_id, user_id, websocket, user_name)
 
-    # Notify others that a new user joined
+    # 1. Send existing participants to the NEW user
+    existing_users = connection_manager.get_participants(meeting_id)
+    # Filter out self
+    others = [u for u in existing_users if u["userId"] != user_id]
+    
+    await connection_manager.send_personal_message(
+        {
+            "type": "existing_participants",
+            "payload": others
+        },
+        websocket
+    )
+
+    # 2. Notify others that a new user joined
     await connection_manager.broadcast(
         meeting_id,
         {
