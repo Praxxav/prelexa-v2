@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from datetime import datetime
 from docx import Document
 from fastapi import UploadFile, BackgroundTasks, HTTPException
 
@@ -235,30 +236,56 @@ class DocumentService:
 
         return {"success": True, "message": "Document deleted successfully"}
 
-async def create_document_from_meeting(org_id: str, state: dict, title: str):
-    content = f"""
-## Transcript
-{state['transcript']}
+    async def create_live_meeting_document(self, org_id: str, title: str, state: dict):
+        # 1. Construct Content
+        content = f"Meeting Title: {title}\n"
+        content += f"Date: {json.dumps(datetime.now().isoformat())}\n\n"
+        
+        content += "## Transcript\n"
+        content += state.get("transcript", "") + "\n\n"
+        
+        content += "## Decisions\n"
+        for d in state.get("decisions", []):
+            content += f"- {d}\n"
+        content += "\n"
 
-## Decisions
-{chr(10).join(state['decisions'])}
+        content += "## Action Items\n"
+        for a in state.get("action_items", []):
+            content += f"- {a}\n"
+        content += "\n"
 
-## Action Items
-{chr(10).join(state['action_items'])}
+        content += "## Risks\n"
+        for r in state.get("risks", []):
+            content += f"- {r}\n"
+        content += "\n"
 
-## Risks
-{chr(10).join(state['risks'])}
-"""
+        # 2. Save to File (so download works)
+        filename = f"meeting_{int(datetime.now().timestamp())}.txt"
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
 
-    doc = Document(
-        org_id=org_id,
-        title=title,
-        content=content,
-        source="meeting",
-    )
+        # 3. Create DB Record
+        # We simulate "insights" with the extracted items so they show up in UI if it uses insights field
+        insights = {
+            "decisions": state.get("decisions", []),
+            "action_items": state.get("action_items", []),
+            "risks": state.get("risks", []),
+            "summary": "Meeting Transcript"
+        }
 
-    db.add(doc)
-    await db.commit()
-    await db.refresh(doc)
+        doc = await db.document.create(
+            data={
+                "status": "completed",
+                "filePath": file_path,
+                "orgId": org_id,
+                "fullText": content,
+                "documentType": "Meeting",
+                "metadata": json.dumps({"title": title}),
+                "insights": json.dumps(insights)
+            }
+        )
 
-    return doc
+        return doc
