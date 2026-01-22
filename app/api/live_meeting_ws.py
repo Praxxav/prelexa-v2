@@ -69,6 +69,10 @@ async def live_ws(websocket: WebSocket):
                                 }
                             )
                         continue
+
+                    if msg_type == "ping":
+                        # Heartbeat received
+                        continue
                     
                     # You could add other JSON types here if needed
 

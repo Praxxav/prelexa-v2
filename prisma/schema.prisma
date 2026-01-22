@@ -125,12 +125,14 @@ model Meeting {
   orgId        String
   meetingId    String   @unique @map("meeting_id")
   title        String
-  startedAt    DateTime @map("started_at")
-  endedAt      DateTime @map("ended_at")
-  duration     Int
+  scheduledAt  DateTime? @map("scheduled_at")
+  startedAt    DateTime? @map("started_at")
+  endedAt      DateTime? @map("ended_at")
+  duration     Int?
   participants String?
-  documentId   String?  @map("document_id")
-  createdAt    DateTime @default(now()) @map("created_at")
+  documentId   String?   @map("document_id")
+  creatorId    String?   @map("creator_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
 
   @@map("meetings")
 }
