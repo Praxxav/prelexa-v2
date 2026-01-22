@@ -32,9 +32,24 @@ async def end_live_meeting_api(
     title = payload.get("title", "Untitled Meeting")
     
     # 1. Stop lifecycle (mark as stopped)
+    # stop_live_meeting(meeting_id) # Don't stop yet if others are there? 
+    # Actually, keep it running for others.
+
+    # 2. Check for remaining participants
+    # We need to import connection_manager first (added in imports)
+    from app.websocket.websocket_manager import connection_manager
+    participants = connection_manager.get_participants(meeting_id)
+    
+    if len(participants) > 0:
+        return {
+            "status": "Meeting left",
+            "message": "Meeting is still active for other participants",
+            "document_id": None
+        }
+
     stop_live_meeting(meeting_id)
 
-    # 2. Get State
+    # 3. Get State
     state = LIVE_DOCUMENT_STATE.get(meeting_id)
     if not state:
         # Depending on if we want to fail or just create empty doc
@@ -45,10 +60,10 @@ async def end_live_meeting_api(
             "risks": []
         }
     
-    # 3. Create Document
+    # 4. Create Document
     doc = await document_service.create_live_meeting_document(org_id, title, state)
 
-    # 4. Clear State
+    # 5. Clear State
     if meeting_id in LIVE_DOCUMENT_STATE:
         del LIVE_DOCUMENT_STATE[meeting_id]
 
