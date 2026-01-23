@@ -4,6 +4,8 @@ FROM python:3.11-slim
 RUN apt-get update && apt-get install -y \
     curl \
     libatomic1 \
+    libasound-dev \
+    libportaudio2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
