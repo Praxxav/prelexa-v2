@@ -217,7 +217,7 @@ STRICT:
 """
 
             response = await self.gemini_client.models.generate_content_async(
-                model="gemini-1.5-flash",
+                model="gemini-2.5-flash",
                 contents=[
                     {
                         "role": "user",

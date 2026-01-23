@@ -18,7 +18,7 @@ class BaseAgent(ABC):
         name: str,
         role: str,
         api_key: str,
-        model: str = "gemini-1.5-flash",
+        model: str = "gemini-2.5-flash",
     ):
         self.name = name
         self.role = role
@@ -131,7 +131,7 @@ class SimpleAgent(BaseAgent):
         role: str,
         api_key: str,
         system_prompt: str,
-        model: str = "gemini-1.5-flash",
+        model: str = "gemini-2.5-flash",
     ):
         super().__init__(name, role, api_key, model)
         self.system_prompt = system_prompt
