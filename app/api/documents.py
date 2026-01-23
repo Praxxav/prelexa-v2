@@ -13,7 +13,7 @@ import os
 import logging
 
 from app.services.document_service import DocumentService
-from app.utils.dependencies import get_org_id
+from app.utils.dependencies import get_org_id, get_user_id
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 document_service = DocumentService()
@@ -33,10 +33,11 @@ class UpdateFieldsRequest(BaseModel):
 async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    org_id: str = Depends(get_org_id)
+    org_id: str = Depends(get_org_id),
+    user_id: str = Depends(get_user_id)
 ):
     try:
-        return await document_service.upload_document(file, background_tasks, org_id)
+        return await document_service.upload_document(file, background_tasks, org_id, user_id)
     except Exception as e:
         logger.error(f"Upload failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -46,8 +47,18 @@ async def upload_document(
 # GET ALL DOCUMENTS (ORG SAFE)
 # -------------------------
 @router.get("/")
-async def get_all_documents(org_id: str = Depends(get_org_id)):
-    return await document_service.get_all_documents(org_id)
+async def get_all_documents(
+    filter: str = "all", 
+    org_id: str = Depends(get_org_id),
+    user_id: str = Depends(get_user_id)
+):
+    filters = {}
+    if filter == "my":
+        filters = {"userId": user_id}
+    elif filter == "shared":
+        filters = {"userId": {"not": user_id}}
+        
+    return await document_service.get_all_documents(org_id, filters)
 
 
 # -------------------------

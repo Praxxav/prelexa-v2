@@ -49,7 +49,10 @@ class DocumentService:
     # ---------------------------
     # UPLOAD DOCUMENT — ORG SAFE
     # ---------------------------
-    async def upload_document(self, file: UploadFile, background_tasks: BackgroundTasks, org_id: str):
+    # ---------------------------
+    # UPLOAD DOCUMENT — ORG SAFE
+    # ---------------------------
+    async def upload_document(self, file: UploadFile, background_tasks: BackgroundTasks, org_id: str, user_id: str = None):
         if not file.filename:
             raise HTTPException(status_code=400, detail="No file provided")
 
@@ -68,6 +71,7 @@ class DocumentService:
                 "status": "uploaded",
                 "filePath": file_path,
                 "orgId": org_id,
+                "userId": user_id,
             }
         )
 
@@ -140,9 +144,13 @@ class DocumentService:
     # ---------------------------
     # GET ALL DOCUMENTS — ORG SAFE
     # ---------------------------
-    async def get_all_documents(self, org_id: str):
+    async def get_all_documents(self, org_id: str, filters: dict = None):
+        where_clause = {"orgId": org_id}
+        if filters:
+            where_clause.update(filters)
+            
         docs = await db.document.find_many(
-            where={"orgId": org_id},
+            where=where_clause,
             order={"createdAt": "desc"},
         )
 
