@@ -13,6 +13,9 @@ from app.api.document_variables import router as document_variables_router
 from app.api.chat import router as chat_router
 from app.api.live_meeting import router as live_meeting_router
 from app.api.live_meeting_ws import router as live_meeting_ws_router
+from app.api.recordings import router as recordings_router
+from app.api.channels import router as channels_router
+
 # Create FastAPI app
 app = FastAPI(
     title="Prelexa AI Document Analysis API",
@@ -43,7 +46,8 @@ app.include_router(document_variables_router, tags=["Document Variables"])
 app.include_router(chat_router)
 app.include_router(live_meeting_router,tags=["Live Meeting"])
 app.include_router(live_meeting_ws_router)
-
+app.include_router(recordings_router)
+app.include_router(channels_router)
 # app.include_router(export_router, prefix="/api")
 
 
@@ -87,4 +91,4 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "database": "connected"}
+    return {"status": "healthy", "database": "connected"} # Reload trigger

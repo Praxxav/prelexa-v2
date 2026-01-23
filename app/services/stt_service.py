@@ -57,3 +57,28 @@ def stream_transcript():
             for result in response.results:
                 if result.is_final:
                     yield result.alternatives[0].transcript
+
+
+async def transcribe_audio_file(file_path: str) -> str:
+    """Transcribe an audio file (WEBM/WAV) using Google Cloud STT"""
+    with open(file_path, "rb") as audio_file:
+        content = audio_file.read()
+
+    audio = speech.RecognitionAudio(content=content)
+    
+    # Configure for WEBM (Opus) which browsers typically send
+    config = speech.RecognitionConfig(
+        encoding=speech.RecognitionConfig.AudioEncoding.WEBM_OPUS,
+        sample_rate_hertz=48000, # Browsers usually default to 48k for webm
+        language_code="en-US",
+        enable_automatic_punctuation=True,
+    )
+
+    response = client.recognize(config=config, audio=audio)
+    
+    transcript = ""
+    for result in response.results:
+        transcript += result.alternatives[0].transcript + "\n"
+    
+    return transcript
+

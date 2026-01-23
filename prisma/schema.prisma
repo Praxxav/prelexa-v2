@@ -11,6 +11,7 @@ datasource db {
 model Document {
   id             String             @id @default(cuid())
   orgId          String
+  userId         String?            @map("user_id")
   status         String
   insights       String?
   fullText       String?
@@ -135,4 +136,27 @@ model Meeting {
   createdAt    DateTime  @default(now()) @map("created_at")
 
   @@map("meetings")
+}
+
+model Channel {
+  id        String           @id @default(cuid())
+  orgId     String
+  name      String
+  members   String[]         // List of user IDs
+  createdAt DateTime         @default(now()) @map("created_at")
+  messages  ChannelMessage[]
+
+  @@map("channels")
+}
+
+model ChannelMessage {
+  id        String   @id @default(cuid())
+  channelId String   @map("channel_id")
+  userId    String   @map("user_id")
+  username  String?  // Cache name for simplicity
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@map("channel_messages")
 }
