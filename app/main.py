@@ -15,6 +15,7 @@ from app.api.live_meeting import router as live_meeting_router
 from app.api.live_meeting_ws import router as live_meeting_ws_router
 from app.api.recordings import router as recordings_router
 from app.api.channels import router as channels_router
+from app.api.developer import router as developer_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -32,7 +33,7 @@ app.add_middleware(
         "http://localhost:3000",
         "https://prelexa.prescalelabs.com",
         "https://apiv1.prescalelabs.com",
-        "https://prelexa.vercel.app"
+        "https://prelexa.netlify.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -53,6 +54,7 @@ app.include_router(live_meeting_router,tags=["Live Meeting"])
 app.include_router(live_meeting_ws_router)
 app.include_router(recordings_router)
 app.include_router(channels_router)
+app.include_router(developer_router)
 # app.include_router(export_router, prefix="/api")
 
 
@@ -96,4 +98,4 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "database": "connected"} # Reload trigger
+    return {"status": "healthy", "database": "connected"} # Reload trigger - api fix

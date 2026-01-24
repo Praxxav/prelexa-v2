@@ -133,6 +133,7 @@ model Meeting {
   participants String?
   documentId   String?   @map("document_id")
   creatorId    String?   @map("creator_id")
+  isFinalized  Boolean  @default(false) @map("is_finalized")
   createdAt    DateTime  @default(now()) @map("created_at")
 
   @@map("meetings")
@@ -159,4 +160,28 @@ model ChannelMessage {
   channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
   @@map("channel_messages")
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  orgId     String
+  key       String   @unique // Store hashed or encrypted if possible, but for now unique index
+  preview   String   // First few chars
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  lastUsed  DateTime? @map("last_used")
+
+  @@map("api_keys")
+}
+
+model WebhookEndpoint {
+  id        String   @id @default(cuid())
+  orgId     String
+  url       String
+  events    String[] // Array of event names
+  secret    String   // Signing secret
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("webhook_endpoints")
 }
