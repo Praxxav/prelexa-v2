@@ -57,7 +57,7 @@ class DocumentService:
             raise HTTPException(status_code=400, detail="No file provided")
 
         ext = os.path.splitext(file.filename)[1].lower()
-        if ext not in [".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"]:
+        if ext not in [".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg", ".webp"]:
             raise HTTPException(status_code=400, detail="Unsupported file format")
 
         os.makedirs(UPLOAD_DIR, exist_ok=True)
