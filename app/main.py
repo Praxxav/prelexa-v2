@@ -33,8 +33,8 @@ app.add_middleware(
         "http://localhost:3000",
         "https://prelexa.prescalelabs.com",
         "https://apiv1.prescalelabs.com",
-        "https://prelexa.netlify.app"
-    ],
+        "https://prelexa-fe.vercel.app",
+    ], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

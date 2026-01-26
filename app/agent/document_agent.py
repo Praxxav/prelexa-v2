@@ -89,3 +89,41 @@ Document Text:
         }
     except Exception as e:
         return {"error": f"Failed to parse: {e}", "raw_output": result}
+
+
+async def analyze_document_image(image_path: str) -> dict:
+    """
+    Given an image path, sends the image to Gemini Vision for structured analysis.
+    """
+    import pathlib
+
+    # Read image bytes
+    img_data = pathlib.Path(image_path).read_bytes()
+    mime_type = "image/jpeg"
+    if image_path.lower().endswith(".png"):
+        mime_type = "image/png"
+    elif image_path.lower().endswith(".webp"):
+        mime_type = "image/webp"
+
+    # Construct prompt with image
+    payload = [
+        "Analyze this document image and extract all key structured information according to the system rules.",
+        {"mime_type": mime_type, "data": img_data}
+    ]
+
+    result = await document_agent.process(payload)
+
+    import json, re
+
+    try:
+        match = re.search(r"\{.*\}", result, re.DOTALL)
+        json_str = match.group(0) if match else result
+        parsed = json.loads(json_str)
+
+        return {
+            "title": parsed.get("title", "Untitled Document"),
+            "document_type": parsed.get("document_type", "unknown"),
+            "fields": parsed.get("fields", []),
+        }
+    except Exception as e:
+        return {"error": f"Failed to parse: {e}", "raw_output": result}

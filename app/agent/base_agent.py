@@ -53,31 +53,50 @@ class BaseAgent(ABC):
         try:
             # Convert messages → Gemini content format
             contents: List[Dict] = []
+            
+            # Helper to process message content
+            def format_parts(content_data: Any) -> List[Dict]:
+                parts = []
+                if isinstance(content_data, str):
+                    parts.append({"text": content_data})
+                elif isinstance(content_data, list):
+                    # Handle list of mixed content (text + images)
+                    for item in content_data:
+                        if isinstance(item, str):
+                             parts.append({"text": item})
+                        elif isinstance(item, dict) and "mime_type" in item and "data" in item:
+                             # Inline data (bytes)
+                             parts.append({"inline_data": item})
+                        elif isinstance(item, dict) and "file_uri" in item:
+                             # File URI
+                             parts.append({"file_data": {"file_uri": item["file_uri"], "mime_type": item.get("mime_type", "image/jpeg")}})
+                return parts
 
             system_prompt = ""
             for msg in messages:
                 if msg["role"] == "system":
                     system_prompt += msg["content"] + "\n"
                 elif msg["role"] == "user":
-                    content = (
-                        system_prompt + msg["content"]
-                        if system_prompt
-                        else msg["content"]
-                    )
-                    contents.append(
-                        {
-                            "role": "user",
-                            "parts": [{"text": content}],
-                        }
-                    )
-                    system_prompt = ""
+                    user_parts = format_parts(msg["content"])
+                    
+                    # Prepend system prompt to the first user message if it exists
+                    if system_prompt:
+                        # If the first part is text, prepend. If not, insert a new text part.
+                        if user_parts and "text" in user_parts[0]:
+                             user_parts[0]["text"] = system_prompt + user_parts[0]["text"]
+                        else:
+                             user_parts.insert(0, {"text": system_prompt})
+                        system_prompt = "" # Clear after using
+                    
+                    contents.append({
+                        "role": "user",
+                        "parts": user_parts,
+                    })
                 elif msg["role"] == "assistant":
-                    contents.append(
-                        {
-                            "role": "model",
-                            "parts": [{"text": msg["content"]}],
-                        }
-                    )
+                     contents.append({
+                        "role": "model",
+                        "parts": format_parts(msg["content"]),
+                    })
 
             # Generation config
             generation_config: Dict[str, Any] = {
@@ -88,7 +107,7 @@ class BaseAgent(ABC):
                 generation_config["response_mime_type"] = "application/json"
 
             # Async Gemini call
-            response = self.client.models.generate_content(
+            response = await self.client.aio.models.generate_content(
                 model=self.model,
                 contents=contents,
                 config=generation_config,
@@ -142,7 +161,7 @@ class SimpleAgent(BaseAgent):
         """Process input using the system prompt."""
         messages = [
             {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": str(input_data)},
+            {"role": "user", "content": input_data},
         ]
 
         if context:

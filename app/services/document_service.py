@@ -4,9 +4,10 @@ import logging
 from datetime import datetime
 from docx import Document
 from fastapi import UploadFile, BackgroundTasks, HTTPException
+import httpx
 
 from db.database import db
-from app.agent.document_agent import analyze_document_text
+from app.agent.document_agent import analyze_document_text, analyze_document_image
 from app.utils.uploads import UPLOAD_DIR
 from app.utils.document_text_extract import extract_text_from_file
 from app.services.document_variable_service import DocumentVariableService
@@ -85,21 +86,73 @@ class DocumentService:
     # BACKGROUND AI PROCESS
     # --------------------------- 
     async def _process_document_background(self, doc_id: str, file_path: str, ext: str):
+        doc = await db.document.find_unique(where={"id": doc_id})
+        if not doc:
+             return
+        doc = await db.document.find_unique(where={"id": doc_id})
+        if not doc:
+             return
         try:
+            # 1. Check Credits via Frontend API (Cross-Service)
+            COST_PER_DOC = 50
+            API_BASE = os.getenv("API_BASE_URL", "http://localhost:3000")
+            INTERNAL_SECRET = os.getenv("AI_INTERNAL_SECRET")
+            
+            # Use urllib to avoid dependency issues (pip/httpx missing)
+            import urllib.request
+            import urllib.error
+            
+            try:
+                url = f"{API_BASE}/api/internal/credits/deduct"
+                data = json.dumps({"orgId": doc.orgId, "amount": COST_PER_DOC}).encode('utf-8')
+                req = urllib.request.Request(url, data=data, method='POST')
+                req.add_header('Content-Type', 'application/json')
+                req.add_header('Authorization', f'Bearer {INTERNAL_SECRET}')
+                
+                # Perform the request (synchronous but safe for this scale)
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    if response.status != 200:
+                         raise Exception(f"HTTP {response.status}")
+                    # Success - credits deducted
+                    
+            except urllib.error.HTTPError as e:
+                error_msg = "Insufficient credits" if e.code == 402 else f"Credit check failed: {e.reason}"
+                logger.warning(f"[{doc_id}] {error_msg}")
+                await db.document.update(
+                    where={"id": doc_id},
+                    data={
+                        "status": "failed",
+                        "insights": json.dumps({"error": error_msg})
+                    }
+                )
+                return
+            except Exception as e:
+                logger.error(f"[{doc_id}] Failed to contact billing service: {e}") 
+                await db.document.update(
+                    where={"id": doc_id},
+                    data={"status": "failed", "insights": json.dumps({"error": "Billing service unavailable"})}
+                )
+                return
+
             await db.document.update(
                 where={"id": doc_id},
                 data={"status": "processing"}
             )
 
-            text = await extract_text_from_file(file_path)
-            if not text.strip():
-                await db.document.update(
-                    where={"id": doc_id},
-                    data={"status": "failed"}
-                )
-                return
-
-            analysis = await analyze_document_text(text)
+            # NEW: If image, use Gemini Vision directly (skip TrOCR)
+            if ext in [".png", ".jpg", ".jpeg", ".webp"]:
+                analysis = await analyze_document_image(file_path)
+                text = "Processed with Gemini Vision. See extracted fields."
+            else:
+                # Text/PDF/DOCX path (Legacy/Standard)
+                text = await extract_text_from_file(file_path)
+                if not text.strip():
+                    await db.document.update(
+                        where={"id": doc_id},
+                        data={"status": "failed"}
+                    )
+                    return
+                analysis = await analyze_document_text(text)
 
             if "error" in analysis:
                 await db.document.update(
@@ -107,6 +160,9 @@ class DocumentService:
                     data={"status": "failed"}
                 )
                 return
+
+            # Credits already deducted via API
+
 
             await db.document.update(
                 where={"id": doc_id},
