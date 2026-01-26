@@ -185,3 +185,27 @@ model WebhookEndpoint {
 
   @@map("webhook_endpoints")
 }
+
+model Organization {
+  id                     String    @id @default(cuid())
+  name                   String
+  slug                   String    @unique
+  logo                   String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  plan                   Plan      @default(FREE)
+  credits                Int       @default(1000)
+  razorpaySubscriptionId String?
+  subscriptionStatus     String?
+  nextBillingDate        DateTime?
+
+  @@map("Organization")
+}
+
+enum Plan {
+  FREE
+  STARTER
+  TEAM
+  BUSINESS
+  ENTERPRISE
+}

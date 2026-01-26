@@ -24,6 +24,46 @@ class ChatService:
         org_id: str,
         document_id: Optional[str] = None
     ):
+        # 1. DEDUCT CREDITS (20 per message)
+        COST_PER_CHAT = 20
+        import os
+        import json
+        import urllib.request
+        import urllib.error
+
+        API_BASE = os.getenv("API_BASE_URL", "http://localhost:3000")
+        INTERNAL_SECRET = os.getenv("AI_INTERNAL_SECRET")
+
+        try:
+            url = f"{API_BASE}/api/internal/credits/deduct"
+            data = json.dumps({"orgId": org_id, "amount": COST_PER_CHAT}).encode('utf-8')
+            req = urllib.request.Request(url, data=data, method='POST')
+            req.add_header('Content-Type', 'application/json')
+            req.add_header('Authorization', f'Bearer {INTERNAL_SECRET}')
+            
+            with urllib.request.urlopen(req, timeout=5) as response:
+                if response.status != 200:
+                        raise Exception(f"HTTP {response.status}")
+        except urllib.error.HTTPError as e:
+            error_msg = "Insufficient credits. Please upgrade your plan." if e.code == 402 else f"Credit check failed: {e.reason}"
+            logger.warning(f"Chat failed for {org_id}: {error_msg}")
+            # Notify user via websocket/response
+            await manager.broadcast(org_id, {
+                "type": "error",
+                "content": error_msg
+            })
+            return {
+                "type": "error",
+                "answer": error_msg
+            }
+        except Exception as e:
+            logger.error(f"Chat billing failed: {e}")
+            # Optional: Allow chat if billing fails? secure default says NO.
+            return {
+                "type": "error",
+                "answer": "Service unavailable due to billing check failure."
+            }
+
         # Save user message
         user_msg = await self._save_message(
             org_id=org_id,
