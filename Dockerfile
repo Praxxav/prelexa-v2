@@ -23,9 +23,6 @@ ENV PYTHONPATH=/app
 
 EXPOSE 8000
 
-# Model download handled at runtime
-
 # Run Prisma generate + FastAPI
-CMD sh -c "python app/download_model.py && \
-    python -m prisma generate --schema prisma/schema.prisma && \
+CMD sh -c "python -m prisma generate --schema prisma/schema.prisma && \
     uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
