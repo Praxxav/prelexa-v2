@@ -42,10 +42,11 @@ PyYAML==6.0.1
 # =========================
 # AI/ML
 # =========================
-torch>=2.2.0
-torchvision>=0.17.0
-transformers>=4.38.0
-sentencepiece>=0.2.0
+# bleow may needed for some of the agents, but not all. So we will keep them as optional dependencies for now.
+# torch>=2.2.0
+# torchvision>=0.17.0
+# transformers>=4.38.0
+# sentencepiece>=0.2.0
 google-genai
 google-generativeai
 sounddevice

@@ -6,17 +6,20 @@ import io
 from typing import Optional, List
 from pdf2image import convert_from_path
 from PIL import Image
-from app.services.trocr_service import trocr_service
+# from app.services.trocr_service import trocr_service
 
 async def perform_ocr_offline(image: Image.Image) -> str:
     """
-    Perform Offline OCR using TrOCR (microsoft/trocr-base-handwritten).
+    TrOCR model not available in production (removed to reduce container size).
+    OCR for images will be handled by Gemini Vision API instead.
     """
-    if not trocr_service:
-        logging.error("TrOCR Service is not available.")
-        return ""
-    
-    return trocr_service.perform_ocr(image)
+    # if not trocr_service:
+    #     logging.error("TrOCR Service is not available.")
+    #     return ""
+    # 
+    # return trocr_service.perform_ocr(image)
+    logging.info("Local OCR not available - use Gemini Vision API for image text extraction")
+    return ""
 
 async def extract_text_from_file(file_path: str) -> Optional[str]:
     """
