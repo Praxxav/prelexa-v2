@@ -1,0 +1,13 @@
+Meeting Title: Onboarding process 
+Date: "2026-03-14T22:00:56.047456"
+
+## Transcript
+ Google Aapka Hai so directly most of the companies like in lexial they actually use that only for they what they want that they also won't like that let's join Kare meeting Google meet directly join Karen so Google meet ke liye Unka specially Lena padta hai vah subscription Google Aapka Hai so directly most of the companies like in lexial they actually use that only for they what they want that they also won't like that let's join Kare meeting Google meet directly join Karen so Google meet ke liye Unka specially Lena padta hai vah subscription
+
+## Decisions
+
+## Action Items
+
+## Risks
+- {'risk': 'Directly joining Google Meet requires a special subscription, which could be a cost or operational blocker for companies.', 'severity': 'medium'}
+
