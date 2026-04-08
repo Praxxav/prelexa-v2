@@ -9,6 +9,7 @@ class Settings:
     Application settings loaded from environment variables.
     """
     GEMINI_API_KEY: str
+    
 
     def __init__(self):
         gemini_api_key = os.getenv("GEMINI_API_KEY")

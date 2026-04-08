@@ -29,7 +29,6 @@ async def extract_text_from_file(file_path: str) -> Optional[str]:
     try:
         file_extension = os.path.splitext(file_path)[1].lower()
         
-        # ---------------------------
         # PDF HANDLING
         # ---------------------------
         if file_extension == '.pdf':
